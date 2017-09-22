@@ -15,6 +15,7 @@ if (length(arguments) == 0){
 
 files <- list.files(arguments[1], full.names = TRUE)
 dirs <- files[file_test('-d', files)]
+grps <- tools::file_path_sans_ext(basename(dirs))
 
 if (length(dirs) == 0){
   stop(paste0("No directories in the given directory \"",arguments,"\""))
@@ -31,24 +32,29 @@ mut_add_contingency <- function(df, fname){
 
 load_sample <- function(filename){
   sam <- tools::file_path_sans_ext(basename(filename))
-  print(sam)
   read_csv(filename) %>%
     select(1) %>% #take just first column
     rename_at(1,~"mz") %>% # rename column to mz
-    mutate(!!sam := 1, foo = "bar") #!! and := mean use the value of filename as the new variable name
+    mutate(!!sam := 1L) #!! and := mean use the value of filename as the new variable name
 }
 
 load_csvs <- function(foldername){
   list.files(foldername, full.names = TRUE, pattern = "*.csv") %>%
     map(~load_sample(.)) %>%
-    join_all(by = "mz", type = "full")
+    plyr::join_all(by = "mz", type = "full") %>%
+    mutate_all(~coalesce(., 0L))
 }
 
 
 df <- map(dirs, ~load_csvs(.)) %>%
-  join_all(by = "mz", type = "full") %>%
-  mutate_all(~coalesce(., 0L)) %>%
-  select()
+  plyr::join_all(by = "mz", type = "full") %>%
+  mutate_all(~coalesce(., 0L))
+
+df %>% filter(test1 == 1)
+
+sample_table <- map(d)
+
+as.tbl(map(dirs, ~list.files(.)))
 
 res <- fisher.test(df)
 
