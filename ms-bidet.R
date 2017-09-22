@@ -24,10 +24,12 @@ if (length(dirs) == 0){
 # > cdn <- read_csv("~/Dropbox (ASU)/Lake_Doug_Valley_Fever/CDN.csv")
 # > cdn[1,]
 
-mut_add_contingency <- function(df, fname){
-  fname <- enquo(fname)
-  sname <- quo_name(fname)
-  mutate(df, !!sname := 1)
+get_samples <- function(directory){
+  tibble(fullpath = list.files(directory, full.names = T, pattern = "*.csv")) %>%
+    mutate(sample = tools::file_path_sans_ext(basename(fullpath))) %>%
+    mutate(dir = directory) %>%
+    mutate(grp = tools::file_path_sans_ext(basename(directory))) %>%
+    select(grp, dir, fullpath, sample)
 }
 
 load_sample <- function(filename){
@@ -45,12 +47,22 @@ load_csvs <- function(foldername){
     mutate_all(~coalesce(., 0L))
 }
 
+select_group <- function(df, sample_table, group){
+  enquo(group)
+  samples <- sample_table %>% filter(grp == group)
+  df %>% select(samples$sample)
+}
+
+samples <- map(dirs, ~get_samples(.)) %>% bind_rows()
 
 df <- map(dirs, ~load_csvs(.)) %>%
   plyr::join_all(by = "mz", type = "full") %>%
   mutate_all(~coalesce(., 0L))
 
-df %>% filter(test1 == 1)
+df %>% filter(test1 == 1) %>% select()
+
+g1 <- samples %>% filter(grp == "grp1") #example how to get samples that belong to a group
+df %>% select(g1$sample) #example how to get column for one sample
 
 sample_table <- map(d)
 
