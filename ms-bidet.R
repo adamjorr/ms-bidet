@@ -37,6 +37,7 @@ load_sample <- function(filename){
   read_csv(filename) %>%
     select(1) %>% #take just first column
     rename_at(1,~"mz") %>% # rename column to mz
+    distinct() %>%
     mutate(!!sam := 1L) #!! and := mean use the value of filename as the new variable name
 }
 
@@ -53,21 +54,70 @@ select_group <- function(df, sample_table, group){
   df %>% select(samples$sample)
 }
 
+count_in_row <- function(df, sample_table, group){
+  df %>%
+    select_group(sample_table, group) %>%
+    
+}
+
+
 samples <- map(dirs, ~get_samples(.)) %>% bind_rows()
 
 df <- map(dirs, ~load_csvs(.)) %>%
   plyr::join_all(by = "mz", type = "full") %>%
   mutate_all(~coalesce(., 0L))
 
-df %>% filter(test1 == 1) %>% select()
+df %>% filter(test1 == 1) %>%
+  select_group(samples,"grp1") %>%
+  gather("grp", "present") %>%
+  count(present)
 
-g1 <- samples %>% filter(grp == "grp1") #example how to get samples that belong to a group
-df %>% select(g1$sample) #example how to get column for one sample
 
-sample_table <- map(d)
-
-as.tbl(map(dirs, ~list.files(.)))
 
 res <- fisher.test(df)
+
+
+
+
+
+
+
+
+
+
+
+# ---- long form ----
+load_sample <- function(filename){
+  sam <- tools::file_path_sans_ext(basename(filename))
+  read_csv(filename) %>%
+    select(1) %>% #take just first column
+    rename_at(1,~"mz") %>% # rename column to mz
+    distinct() %>%
+    mutate(sam = sam) #!! and := mean use the value of filename as the new variable name
+}
+
+load_csvs <- function(foldername){
+  grpname <- tools::file_path_sans_ext(basename(foldername))
+  list.files(foldername, full.names = TRUE, pattern = "*.csv") %>%
+    map(~load_sample(.)) %>%
+    bind_rows() %>%
+    mutate(grp = grpname)
+}
+
+df <- map(dirs, ~load_csvs(.)) %>%
+  bind_rows() %>%
+  group_by(mz,grp)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
