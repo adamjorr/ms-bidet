@@ -1,8 +1,9 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/Rscript
 # Rscript ms-bidet.R [some_dir/]
 # one sample should be named control
 
-suppressPackageStartupMessages(library('plyr','tidyverse'))
+suppressPackageStartupMessages(require('plyr'))
+suppressPackageStartupMessages(require('tidyverse'))
 
 arguments <- commandArgs(trailingOnly = TRUE)
 
@@ -60,16 +61,17 @@ build_contingency <- function(mzd, df){
   as.matrix(m)
 }
 
-control_sample <- "control"
+control_group <- "control"
 
 df <- map(dirs, ~load_csvs(.)) %>%
   bind_rows()
 
 controldf <- df %>%
-  filter(sam == control_sample)
+  filter(grp == control_group)
 
 df <- df %>%
-  filter(mz %in% controldf$mz)
+  filter(mz %in% controldf$mz) %>%
+  filter(grp != control_group)
 
 charges <- select(df, mz) %>%
   distinct()
