@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 # Rscript ms-bidet.R [some_dir/]
+# one sample should be named control
 
 suppressPackageStartupMessages(library('plyr','tidyverse'))
 
@@ -16,7 +17,6 @@ if (length(arguments) == 0){
 get_files <- function(dir){
   list.files(dir, full.names = TRUE)
 }
-
 
 files <- get_files(arguments[1])
 dirs <- files[file_test('-d', files)]
@@ -60,8 +60,16 @@ build_contingency <- function(mzd, df){
   as.matrix(m)
 }
 
+control_sample <- "control"
+
 df <- map(dirs, ~load_csvs(.)) %>%
   bind_rows()
+
+controldf <- df %>%
+  filter(sam == control_sample)
+
+df <- df %>%
+  filter(mz %in% controldf$mz)
 
 charges <- select(df, mz) %>%
   distinct()
@@ -87,9 +95,11 @@ full_contingencies <- bind_rows(present, absent)
 pvals <- unlist(map(charges$mz, ~fisher.test(build_contingency(.,full_contingencies))$p))
 adjusted <- p.adjust(pvals)
 
-charges %>%
+out <- charges %>%
   mutate( p = pvals ) %>%
   mutate( q = adjusted)
+
+writeLines(format_csv(out), stdout())
 
 # --- short form ---
 # deprecated
