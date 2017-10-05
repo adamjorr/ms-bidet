@@ -77,9 +77,9 @@ df <- map(dirs, ~load_csvs(.)) %>%
 controldf <- df %>%
   filter(grp == control_group)
 
-#remove rows in data that aren't in control group
+#remove rows in data that are in control group
 df <- df %>%
-  filter(mz %in% controldf$mz) %>%
+  # filter(mz %in% controldf$mz) %>%
   filter(grp != control_group)
 
 #desired peaks possible in data
@@ -114,6 +114,7 @@ adjusted <- p.adjust(pvals) #adjust p-values for multiple tests
 out <- charges %>%
   mutate( p = pvals ) %>%
   mutate( q = adjusted) %>%
+  mutate( inctl = ~mz %in% controldf$mz) %>%
   arrange(q)
 
 writeLines(format_csv(out), stdout())
