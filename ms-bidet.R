@@ -230,7 +230,14 @@ create_contingency <- function(df1, df2, group1, group2){
 counts <- grps[grps != 'control'] %>%
   map(~create_counts(df,sams, .))
 
-pvals <- map(seq_along(charges), ~fisher.test(create_contingency(counts[[1]][.,],counts[[2]][.,],grps[1],grps[2]))$p) %>%
+pvals <- map(seq_along(charges),
+             ~fisher.test(
+               create_contingency(
+                 counts[[1]][.,],
+                 counts[[2]][.,],
+                 grps[1],
+                 grps[2])
+               alternative = 'g')$p) %>%
   unlist()
 qvals <- p.adjust(pvals)
 
