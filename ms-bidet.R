@@ -167,7 +167,74 @@ writeLines(format_csv(out), stdout())
 #   count(present)
 # 
 
+# --- short form, again ---
+load_sample <- function(filename){
+  sam <- tools::file_path_sans_ext(basename(filename))
+  suppressMessages(read_csv(filename)) %>%
+    select(1) %>% #take just first column
+    rename_at(1,~sam) %>% # rename column to mz
+    distinct() %>% #get rid of duplicated rows
+    na.omit() #get rid of any rows with NAs
+}
 
+load_csvs <- function(foldername){
+  grpname <- tools::file_path_sans_ext(basename(foldername))
+  list.files(foldername, full.names = TRUE, pattern = "*.csv") %>% #load all csvs
+    map(~load_sample(.)) %>% #load and prefilter them
+    bind_rows() %>% #concatenate them
+    mutate(grp = grpname) %>% #add the groupname as a variable
+    mutate(val = 1L) #add column indicating presence of m/z peak
+}
 
+add_contingencies <- function(charges, newdata){
+  cname <- names(newdata)[1]
+  charges <- charges %>%
+    transmute(!!cname := mz %in% newdata[[1]])
+}
 
+grps <- tools::file_path_sans_ext(basename(dirs))
+sams <- map(dirs, list.files) %>%
+  map(tools::file_path_sans_ext)
+names(sams) <- grps
 
+alldata <- list.files('test/data', full.names = TRUE, pattern = '*.csv', recursive = TRUE) %>%
+  map(~load_sample(.))
+
+charges <- alldata %>%
+  unlist() %>%
+  unique()
+
+df <- tibble(mz = charges)
+
+df <- alldata %>%
+  map(~add_contingencies(df, .)) %>%
+  c(list(df),.) %>%
+  bind_cols()
+
+create_counts <- function(frame, sams, groupname){
+  frame %>%
+    select(sams[[groupname]]) %>%
+    transmute(present = unlist(pmap(.,sum)), absent = length(sams[[groupname]]) - present)
+}
+
+create_contingency <- function(df1, df2, group1, group2){
+  df1 <- df1 %>%
+    gather_(key_col = 'key', value_col = group1, gather_cols = c('present','absent'))
+  df2 <- df2 %>%
+    gather_(key_col = 'key', value_col = group2, gather_cols = c('present','absent'))
+  df1 %>%
+    left_join(df2, by = 'key') %>%
+    select(-key) %>%
+    as.matrix()
+}
+
+counts <- grps[grps != 'control'] %>%
+  map(~create_counts(df,sams, .))
+
+pvals <- map(seq_along(charges), ~fisher.test(create_contingency(counts[[1]][.,],counts[[2]][.,],grps[1],grps[2]))$p) %>%
+  unlist()
+qvals <- p.adjust(pvals)
+
+df %>% mutate(p = pvals, q = qvals) %>%
+  select(mz, p , q, everything()) %>%
+  arrange(p)
