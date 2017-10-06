@@ -236,7 +236,7 @@ pvals <- map(seq_along(charges),
                  counts[[1]][.,],
                  counts[[2]][.,],
                  grps[1],
-                 grps[2])
+                 grps[2]),
                alternative = 'g')$p) %>%
   unlist()
 qvals <- p.adjust(pvals)
