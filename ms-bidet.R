@@ -171,7 +171,7 @@ if (length(dirs) == 0){
 load_sample <- function(filename){
   sam <- tools::file_path_sans_ext(basename(filename))
   suppressMessages(read_csv(filename)) %>%
-    select(1) %>% #take just first column
+    select(contains("m/z")) %>% #take the column that contains "m/z"
     rename_at(1,~sam) %>% # rename column to mz
     distinct() %>% #get rid of duplicated rows
     na.omit() #get rid of any rows with NAs
