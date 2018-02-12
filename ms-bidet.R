@@ -169,11 +169,11 @@ if (length(dirs) == 0){
 
 # ---- short form, again ----
 load_sample <- function(filename){
+  cat(filename, "\n")
   sam <- tools::file_path_sans_ext(basename(filename))
   suppressMessages(read_csv(filename)) %>%
     select(contains("m/z")) %>% #take the column that contains "m/z"
     rename_at(1,~sam) %>% # rename column to mz
-    transmute_at(1, funs(round), digits = 2) %>%
     distinct() %>% #get rid of duplicated rows
     na.omit() #get rid of any rows with NAs
 }
@@ -217,28 +217,24 @@ create_counts <- function(frame, sams, groupname){
     transmute(present = unlist(pmap(.,sum)), absent = length(sams[[groupname]]) - present)
 }
 
-create_contingency <- function(df1, df2, group1, group2){
-  df1 <- df1 %>%
-    gather_(key_col = 'key', value_col = group1, gather_cols = c('present','absent'))
-  df2 <- df2 %>%
-    gather_(key_col = 'key', value_col = group2, gather_cols = c('present','absent'))
-  df1 %>%
-    left_join(df2, by = 'key') %>%
-    select(-key) %>%
-    as.matrix()
-}
+# create_contingency <- function(df1, df2, group1, group2){
+#   df1 <- df1 %>%
+#     gather_(key_col = 'key', value_col = group1, gather_cols = c('present','absent'))
+#   df2 <- df2 %>%
+#     gather_(key_col = 'key', value_col = group2, gather_cols = c('present','absent'))
+#   df1 %>%
+#     left_join(df2, by = 'key') %>%
+#     select(-key) %>%
+#     as.matrix()
+# }
 
 counts <- grps[grps != 'control'] %>%
   map(~create_counts(df,sams, .))
 
 pvals <- map(seq_along(charges),
              ~fisher.test(
-               create_contingency(
-                 counts[[1]][.,],
-                 counts[[2]][.,],
-                 grps[1],
-                 grps[2]),
-               alternative = 'g')$p) %>%
+                bind_rows(counts[[1]][.,],counts[[2]][.,]),
+                alternative = 'g')$p) %>%
   unlist()
 qvals <- p.adjust(pvals)
 
@@ -255,7 +251,7 @@ outwithlabel <- out %>%
   select(mz, p, q, everything())
   
 shortout <- out %>%
-  filter_at(sams$normal, all_vars(. == F))
+  filter_at(sams$negative, all_vars(. == F))
 
 shortoutlabeled <- shortout %>%
   transmute_all(funs(as.character)) %>%
