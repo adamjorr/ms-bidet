@@ -173,6 +173,7 @@ load_sample <- function(filename){
   suppressMessages(read_csv(filename)) %>%
     select(contains("m/z")) %>% #take the column that contains "m/z"
     rename_at(1,~sam) %>% # rename column to mz
+    transmute_at(1, funs(round), digits = 2) %>%
     distinct() %>% #get rid of duplicated rows
     na.omit() #get rid of any rows with NAs
 }
@@ -245,4 +246,21 @@ out <- df %>% mutate(p = pvals, q = qvals) %>%
   select(mz, p , q, everything()) %>%
   arrange(p)
 
-writeLines(format_csv(out), stdout())
+longgroups <- unlist(map(grps,~rep(.,length(sams[[.]]))))
+names(longgroups) <- unlist(sams)
+
+outwithlabel <- out %>%
+  transmute_all(funs(as.character)) %>%
+  bind_rows(longgroups,.) %>%
+  select(mz, p, q, everything())
+  
+shortout <- out %>%
+  filter_at(sams$normal, all_vars(. == F))
+
+shortoutlabeled <- shortout %>%
+  transmute_all(funs(as.character)) %>%
+  bind_rows(longgroups, .) %>%
+  select(mz,p,q, everything())
+
+writeLines(format_csv(outwithlabel), 'full_out.csv')
+writeLines(format_csv(shortoutlabeled), 'short_out.csv')
