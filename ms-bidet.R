@@ -100,14 +100,28 @@ outwithlabel <- out %>%
   transmute_all(funs(as.character)) %>%
   bind_rows(longgroups,.) %>%
   select(mz, p, q, everything())
-  
-shortout <- out %>%
-  filter_at(sams$negative, all_vars(. == F))
-
-shortoutlabeled <- shortout %>%
-  transmute_all(funs(as.character)) %>%
-  bind_rows(longgroups, .) %>%
-  select(mz,p,q, everything())
 
 writeLines(format_csv(outwithlabel), 'full_out.csv')
-writeLines(format_csv(shortoutlabeled), 'short_out.csv')
+
+if("negative" %in% names(sams)){
+  shortout <- out %>%
+    filter_at(sams$negative, all_vars(. == F))
+
+  shortoutlabeled <- shortout %>%
+    transmute_all(funs(as.character)) %>%
+    bind_rows(longgroups, .) %>%
+    select(mz,p,q, everything())
+
+  writeLines(format_csv(shortoutlabeled), 'short_out.csv')
+}
+
+# shortout <- out %>%
+#   filter_at(sams$negative, all_vars(. == F))
+
+# shortoutlabeled <- shortout %>%
+#   transmute_all(funs(as.character)) %>%
+#   bind_rows(longgroups, .) %>%
+#   select(mz,p,q, everything())
+
+
+
