@@ -7,7 +7,10 @@ Usage: `Rscript ms-bidet.R [directory]`
 The `directory` argument is optional; if it is given, it will look for input data in all subdirectories of that directory. The default is to use the current working directory.
 
 ## Data Structure
-Create a directory for each category of sample (for example, control vs. infected). Each sample should be its own csv file within the appropriate directory for its category. One of the columns in the csv is expected to have a header labeled 'm/z'.
+Create a directory for each category of sample.
+There should be one directory called negative for negative samples and one directory called positive for positive samples.
+Each sample should be its own csv file within the appropriate directory for its category.
+One of the columns in the csv is expected to have a header labeled 'm/z'.
 
 ## Control Data
 You can include data that appears in the output but is not included in the significance test by creating a group called 'control' (case sensitive). Any samples in this folder will be included in the output but will be ignored when doing significance testing.
