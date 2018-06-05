@@ -81,10 +81,11 @@ create_counts <- function(frame, sams, groupname){
 
 counts <- grps[grps != 'control'] %>%
   map(~create_counts(df,sams, .))
+names(counts) <- grps[grps != 'control']
 
 pvals <- map(seq_along(charges),
              ~fisher.test(
-                bind_rows(counts[[1]][.,],counts[[2]][.,]),
+                bind_rows(counts[['positive']][.,],counts[['negative']][.,]),
                 alternative = 'g')$p) %>%
   unlist()
 qvals <- p.adjust(pvals)
